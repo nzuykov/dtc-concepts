@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
+<meta name="robots" content="noindex, nofollow">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dream Team Consulting</title>
@@ -218,6 +219,11 @@
             transition: all var(--ease);
             position: relative;
             overflow: hidden;
+            /* `overflow: hidden` is here for the hover sweep, and it also
+               resolves this flex item's automatic minimum size to zero. That
+               let a narrow row shrink the button past its own label and clip
+               the text rather than push the row wider. */
+            flex: 0 0 auto;
         }
 
         .cta-btn::before {
@@ -312,7 +318,9 @@
             color: #FFFFFF;
             list-style: none;
             display: flex;
-            align-items: center;
+            /* center reads fine on one line and badly on a phone, where the
+               title takes two or three and the marker floats to the middle */
+            align-items: baseline;
             transition: color var(--ease);
         }
 
@@ -326,6 +334,10 @@
             margin-right: 1rem;
             font-family: var(--font-body);
             font-weight: 400;
+            /* As a flex item this box was allowed to shrink, so on a phone the
+               marker wrapped into a stack of three glyphs beside the title. */
+            flex: 0 0 auto;
+            white-space: nowrap;
         }
 
         details[open] summary::before {
@@ -386,12 +398,31 @@
             display: flex;
             gap: 1rem;
             align-items: flex-start;
+            /* The paragraph beside the button is long; without a wrap the row
+               had to take the space out of the button. */
+            flex-wrap: wrap;
         }
         
         @media (max-width: 600px) {
             .cmd-input-area {
                 flex-direction: column;
             }
+        }
+
+        /* A terminal wraps a long command at the column edge - it does not
+           push the window wider. `./initiate_analysis.sh --target="..."` is
+           one unbroken 56-character token, about 537px of monospace against a
+           244px column, and with nowhere to break it left the frame. Breaking
+           anywhere is what a real terminal does, and unlike running prose a
+           command line loses nothing by it. */
+        .cmd-line span { overflow-wrap: anywhere; }
+
+        /* The button clips its own label: `overflow: hidden` is there for the
+           hover sweep, so a label too wide for the box disappeared instead of
+           wrapping. 2rem of side padding is a desktop measure. */
+        @media (max-width: 900px) {
+            .cmd-line { padding: 1.25rem; }
+            .cta-btn { padding: 1rem 1.25rem; text-align: center; }
         }
     
 /* --- interaction craft: named by the jury as the weakest axis alongside
@@ -445,20 +476,72 @@ a:focus-visible, button:focus-visible, [tabindex]:focus-visible {
 .ph-tag { position: absolute; left: 18px; bottom: 16px; font-size: 12.5px; letter-spacing: .08em;
           text-transform: uppercase; padding: 6px 11px; border: 1px solid currentColor;
           border-radius: 2px; background: color-mix(in srgb, #0B0C10 78%, transparent); }
-@media (max-width: 760px) {
-  .site-links { display: none; }
-  .site-nav-in { justify-content: flex-start; }
-}
-
 .site-mark { display: inline-flex; align-items: center; gap: 10px; }
 .dt-mark { width: 30px; height: 21px; flex: 0 0 auto; }
 .dt-word { font-weight: 700; letter-spacing: .14em; text-transform: uppercase;
            font-size: 13px; white-space: nowrap; }
 .dt-word span { font-weight: 400; opacity: .65; }
+/* ---- phone navigation ----
+   This used to be `.site-links { display: none }` and nothing else. The links
+   vanished under 760px and no control replaced them, so on a phone the page
+   had eight sections and no way to reach any of them. A row of eight links
+   cannot fit that width, so the row becomes a disclosure panel. */
+/* These three correct rules in the block above and in the brand-mark sheet
+   that `brand_logo.py` appends afterwards. They sit at the end of the
+   stylesheet on purpose: source order is what lets them win, and the tail is
+   the one region `apply_mobile_nav.py` owns and can rewrite cleanly.
+
+   width: 94vw measured the viewport while the bar it sits in is narrower than
+   that wherever a concept pads its own body, so the row ran past its parent.
+   And the mark was allowed to shrink, so at tablet width the row squeezed
+   "Dream Team Consulting" until the renderer cut the end off it. */
+.site-nav-in { width: min(1320px, 94%); flex-wrap: wrap; }
+.site-mark { flex: 0 0 auto; }
+.site-links { flex: 1 1 auto; justify-content: flex-end; }
+
+.site-burger { display: none; }
+@media (max-width: 760px) {
+  .site-nav-in { justify-content: space-between; flex-wrap: wrap; gap: 10px; }
+  .site-nav.open { background: #0B0C10; }
+  /* 44px keeps the tap target at the accessibility floor. No negative margin
+     to optically align it with the container edge: the bar is a different
+     width in every concept, and in one of them the pull overflowed. */
+  .site-burger { display: inline-flex; align-items: center; justify-content: center;
+                 width: 44px; height: 44px; padding: 0; flex: 0 0 auto;
+                 background: none; border: 0; color: inherit; cursor: pointer;
+                 -webkit-tap-highlight-color: transparent; }
+  .site-burger span { position: relative; display: block; width: 20px; height: 1.5px;
+                      background: currentColor; transition: background-color .2s ease; }
+  .site-burger span::before, .site-burger span::after {
+                      content: ''; position: absolute; left: 0; width: 20px; height: 1.5px;
+                      background: currentColor;
+                      transition: transform .22s ease, top .22s ease; }
+  .site-burger span::before { top: -6px; }
+  .site-burger span::after { top: 6px; }
+  .site-burger[aria-expanded="true"] span { background: transparent; }
+  .site-burger[aria-expanded="true"] span::before { top: 0; transform: rotate(45deg); }
+  .site-burger[aria-expanded="true"] span::after { top: 0; transform: rotate(-45deg); }
+  .site-burger:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
+
+  /* align-items: center comes from the desktop row, where it is right. In a
+     column it centres each link on its own text width, which leaves ragged
+     labels and hairline separators floating in the middle of the panel. */
+  .site-links { display: none; order: 3; flex-basis: 100%; flex-direction: column;
+                align-items: stretch; gap: 0; padding: 2px 0 10px; }
+  .site-links.open { display: flex; }
+  .site-links a { font-size: 16px; padding: 13px 2px; opacity: .92; border-radius: 0;
+                  text-align: left;
+                  border-bottom: 1px solid color-mix(in srgb, currentColor 14%, transparent); }
+  .site-links a:last-child { border-bottom: 0; }
+  .site-links a.on { opacity: 1; font-weight: 600; box-shadow: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .site-burger span, .site-burger span::before, .site-burger span::after { transition: none; }
+}
 </style>
 </head>
 <body><a id="top"></a>
-<nav class="site-nav"><div class="site-nav-in"><a class="site-mark" href="#top"><svg class='dt-mark' viewBox='0 0 34 24' fill='none' aria-hidden='true'><path d='M2 20 C10 20 10 4 18 4 C26 4 26 20 32 20' stroke='currentColor' stroke-width='1.9' stroke-linecap='round'/><path d='M2 4 C10 4 10 20 18 20 C26 20 26 4 32 4' stroke='currentColor' stroke-width='1.9' stroke-linecap='round' opacity='.45'/></svg><span class='dt-word'>Dream Team <span>Consulting</span></span></a><div class="site-links"><a href="#about">О практике</a><a href="#industries">Отрасли</a><a href="#cases">Проекты</a><a href="#insights">Материалы</a><a href="#team">Команда</a><a href="#contacts">Контакты</a></div></div></nav>
+<nav class="site-nav"><div class="site-nav-in"><a class="site-mark" href="#top"><svg class='dt-mark' viewBox='0 0 34 24' fill='none' aria-hidden='true'><path d='M2 20 C10 20 10 4 18 4 C26 4 26 20 32 20' stroke='currentColor' stroke-width='1.9' stroke-linecap='round'/><path d='M2 4 C10 4 10 20 18 20 C26 20 26 4 32 4' stroke='currentColor' stroke-width='1.9' stroke-linecap='round' opacity='.45'/></svg><span class='dt-word'>Dream Team <span>Consulting</span></span></a><div class="site-links" id="site-links"><a href="#about">О практике</a><a href="#industries">Отрасли</a><a href="#cases">Проекты</a><a href="#insights">Материалы</a><a href="#team">Команда</a><a href="#contacts">Контакты</a></div><button class="site-burger" type="button" aria-label="Меню" aria-expanded="false" aria-controls="site-links"><span></span></button></div></nav>
 
 
     <nav class="sys-nav">
@@ -735,6 +818,28 @@ a:focus-visible, button:focus-visible, [tabindex]:focus-visible {
 
 <script>
 (function(){
+  // Phone menu: the burger is in the markup, this only wires it.
+  var nav = document.querySelector('.site-nav');
+  var panel = document.getElementById('site-links') || document.querySelector('.site-links');
+  var burger = document.querySelector('.site-burger');
+  if (nav && panel && burger) {
+    var set = function(open){
+      panel.classList.toggle('open', open);
+      nav.classList.toggle('open', open);
+      burger.setAttribute('aria-expanded', open ? 'true' : 'false');
+    };
+    burger.addEventListener('click', function(){
+      set(burger.getAttribute('aria-expanded') !== 'true');
+    });
+    // Tapping a link navigates; leaving the panel open would cover the target.
+    panel.addEventListener('click', function(e){
+      if (e.target.closest('a')) set(false);
+    });
+    document.addEventListener('keydown', function(e){
+      if (e.key === 'Escape') set(false);
+    });
+  }
+
   var links = [].slice.call(document.querySelectorAll('.site-links a'));
   var map = {};
   links.forEach(function(a){

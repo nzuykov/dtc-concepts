@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
+<meta name="robots" content="noindex, nofollow">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Dream Team Consulting</title>
@@ -368,8 +369,13 @@
     }
   }
 
-  /* Responsive Safeguards */
-  @media (max-width: 100%; max-width: 900px) {
+  /* Responsive Safeguards
+     This read `(max-width: 100%; max-width: 900px)`. A percentage is not a
+     valid media feature value and the semicolon ends the query, so the whole
+     block was dropped by the parser and every rule below it - the column
+     collapse, the 80px panel paddings coming down to 40px, the side padding
+     on .panel-info - had never once applied on a phone. */
+  @media (max-width: 900px) {
     .col-5, .col-6, .col-7, .col-8, .col-12 {
       grid-column: span 12;
     }
@@ -386,6 +392,20 @@
     .manifesto-box { padding: 40px; }
     .manifesto-box::before { display: none; }
     .section-padding { padding: 80px 0; }
+  }
+
+  /* Phone step. The page had no type scale below its desktop one, so the
+     manifesto ran at h2/48px inside a 257px column: "гарантированную" alone
+     needs about 360px there, and the surplus went out of the viewport where
+     `overflow-x: hidden` on the body swallowed it. Panels come down from the
+     tablet 40px to 28px for the same reason - at this width the padding was
+     eating more of the line than the words were. */
+  @media (max-width: 600px) {
+    h1 { font-size: 40px; }
+    h2 { font-size: 30px; }
+    h3 { font-size: 22px; }
+    .contact-panel, .manifesto-box, .card-inner { padding: 28px; }
+    .section-padding { padding: 64px 0; }
   }
 
 /* --- responsive floor: the 12-column grid has to collapse on a phone,
@@ -454,20 +474,72 @@ html { background-color: #F8F9FA; }
 .ph-tag { position: absolute; left: 18px; bottom: 16px; font-size: 12.5px; letter-spacing: .08em;
           text-transform: uppercase; padding: 6px 11px; border: 1px solid currentColor;
           border-radius: 2px; background: color-mix(in srgb, #F8F9FA 78%, transparent); }
-@media (max-width: 760px) {
-  .site-links { display: none; }
-  .site-nav-in { justify-content: flex-start; }
-}
-
 .site-mark { display: inline-flex; align-items: center; gap: 10px; }
 .dt-mark { width: 30px; height: 21px; flex: 0 0 auto; }
 .dt-word { font-weight: 700; letter-spacing: .14em; text-transform: uppercase;
            font-size: 13px; white-space: nowrap; }
 .dt-word span { font-weight: 400; opacity: .65; }
+/* ---- phone navigation ----
+   This used to be `.site-links { display: none }` and nothing else. The links
+   vanished under 760px and no control replaced them, so on a phone the page
+   had eight sections and no way to reach any of them. A row of eight links
+   cannot fit that width, so the row becomes a disclosure panel. */
+/* These three correct rules in the block above and in the brand-mark sheet
+   that `brand_logo.py` appends afterwards. They sit at the end of the
+   stylesheet on purpose: source order is what lets them win, and the tail is
+   the one region `apply_mobile_nav.py` owns and can rewrite cleanly.
+
+   width: 94vw measured the viewport while the bar it sits in is narrower than
+   that wherever a concept pads its own body, so the row ran past its parent.
+   And the mark was allowed to shrink, so at tablet width the row squeezed
+   "Dream Team Consulting" until the renderer cut the end off it. */
+.site-nav-in { width: min(1320px, 94%); flex-wrap: wrap; }
+.site-mark { flex: 0 0 auto; }
+.site-links { flex: 1 1 auto; justify-content: flex-end; }
+
+.site-burger { display: none; }
+@media (max-width: 760px) {
+  .site-nav-in { justify-content: space-between; flex-wrap: wrap; gap: 10px; }
+  .site-nav.open { background: #F8F9FA; }
+  /* 44px keeps the tap target at the accessibility floor. No negative margin
+     to optically align it with the container edge: the bar is a different
+     width in every concept, and in one of them the pull overflowed. */
+  .site-burger { display: inline-flex; align-items: center; justify-content: center;
+                 width: 44px; height: 44px; padding: 0; flex: 0 0 auto;
+                 background: none; border: 0; color: inherit; cursor: pointer;
+                 -webkit-tap-highlight-color: transparent; }
+  .site-burger span { position: relative; display: block; width: 20px; height: 1.5px;
+                      background: currentColor; transition: background-color .2s ease; }
+  .site-burger span::before, .site-burger span::after {
+                      content: ''; position: absolute; left: 0; width: 20px; height: 1.5px;
+                      background: currentColor;
+                      transition: transform .22s ease, top .22s ease; }
+  .site-burger span::before { top: -6px; }
+  .site-burger span::after { top: 6px; }
+  .site-burger[aria-expanded="true"] span { background: transparent; }
+  .site-burger[aria-expanded="true"] span::before { top: 0; transform: rotate(45deg); }
+  .site-burger[aria-expanded="true"] span::after { top: 0; transform: rotate(-45deg); }
+  .site-burger:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
+
+  /* align-items: center comes from the desktop row, where it is right. In a
+     column it centres each link on its own text width, which leaves ragged
+     labels and hairline separators floating in the middle of the panel. */
+  .site-links { display: none; order: 3; flex-basis: 100%; flex-direction: column;
+                align-items: stretch; gap: 0; padding: 2px 0 10px; }
+  .site-links.open { display: flex; }
+  .site-links a { font-size: 16px; padding: 13px 2px; opacity: .92; border-radius: 0;
+                  text-align: left;
+                  border-bottom: 1px solid color-mix(in srgb, currentColor 14%, transparent); }
+  .site-links a:last-child { border-bottom: 0; }
+  .site-links a.on { opacity: 1; font-weight: 600; box-shadow: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .site-burger span, .site-burger span::before, .site-burger span::after { transition: none; }
+}
 </style>
 </head>
 <body><a id="top"></a>
-<nav class="site-nav"><div class="site-nav-in"><a class="site-mark" href="#top"><svg class='dt-mark' viewBox='0 0 34 24' fill='none' aria-hidden='true'><path d='M2 20 C10 20 10 4 18 4 C26 4 26 20 32 20' stroke='currentColor' stroke-width='1.9' stroke-linecap='round'/><path d='M2 4 C10 4 10 20 18 20 C26 20 26 4 32 4' stroke='currentColor' stroke-width='1.9' stroke-linecap='round' opacity='.45'/></svg><span class='dt-word'>Dream Team <span>Consulting</span></span></a><div class="site-links"><a href="#about">О практике</a><a href="#industries">Отрасли</a><a href="#cases">Проекты</a><a href="#insights">Материалы</a><a href="#team">Команда</a><a href="#contacts">Контакты</a></div></div></nav>
+<nav class="site-nav"><div class="site-nav-in"><a class="site-mark" href="#top"><svg class='dt-mark' viewBox='0 0 34 24' fill='none' aria-hidden='true'><path d='M2 20 C10 20 10 4 18 4 C26 4 26 20 32 20' stroke='currentColor' stroke-width='1.9' stroke-linecap='round'/><path d='M2 4 C10 4 10 20 18 20 C26 20 26 4 32 4' stroke='currentColor' stroke-width='1.9' stroke-linecap='round' opacity='.45'/></svg><span class='dt-word'>Dream Team <span>Consulting</span></span></a><div class="site-links" id="site-links"><a href="#about">О практике</a><a href="#industries">Отрасли</a><a href="#cases">Проекты</a><a href="#insights">Материалы</a><a href="#team">Команда</a><a href="#contacts">Контакты</a></div><button class="site-burger" type="button" aria-label="Меню" aria-expanded="false" aria-controls="site-links"><span></span></button></div></nav>
 
 
 <header class="header">
@@ -657,6 +729,28 @@ document.addEventListener("DOMContentLoaded", () => {
 
 <script>
 (function(){
+  // Phone menu: the burger is in the markup, this only wires it.
+  var nav = document.querySelector('.site-nav');
+  var panel = document.getElementById('site-links') || document.querySelector('.site-links');
+  var burger = document.querySelector('.site-burger');
+  if (nav && panel && burger) {
+    var set = function(open){
+      panel.classList.toggle('open', open);
+      nav.classList.toggle('open', open);
+      burger.setAttribute('aria-expanded', open ? 'true' : 'false');
+    };
+    burger.addEventListener('click', function(){
+      set(burger.getAttribute('aria-expanded') !== 'true');
+    });
+    // Tapping a link navigates; leaving the panel open would cover the target.
+    panel.addEventListener('click', function(e){
+      if (e.target.closest('a')) set(false);
+    });
+    document.addEventListener('keydown', function(e){
+      if (e.key === 'Escape') set(false);
+    });
+  }
+
   var links = [].slice.call(document.querySelectorAll('.site-links a'));
   var map = {};
   links.forEach(function(a){
